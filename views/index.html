@@ -7,5 +7,10 @@
 <body>
 <h1>Hello World From Template</h1>
 {{.URL}}
+<p>
+{{if isset(test)}}
+    Session is <strong>{{test}}</strong>
+{{end}}
+</p>
 </body>
 </html>
