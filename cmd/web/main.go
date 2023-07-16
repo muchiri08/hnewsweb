@@ -2,10 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"flag"
+	"fmt"
 	"github.com/CloudyKit/jet/v6"
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 	_ "github.com/lib/pq"
+	"github.com/muchiri08/hnews/models"
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/postgresql"
 	"log"
@@ -22,6 +25,7 @@ type application struct {
 	infoLog *log.Logger
 	view    *jet.Set
 	session *scs.SessionManager
+	Models  models.Models
 }
 
 type server struct {
@@ -31,6 +35,10 @@ type server struct {
 }
 
 func main() {
+
+	migrate := flag.Bool("migrate", false, "should migrate - drop all tables")
+	flag.Parse()
+
 	server := server{
 		host: "localhost",
 		port: "8009",
@@ -57,6 +65,15 @@ func main() {
 		}
 	}(upper)
 
+	//run migration scripts
+	if *migrate {
+		fmt.Println("Running migration...")
+		if err := runMigrationScript(upper); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Done running migration.")
+	}
+
 	//init our application
 	app := application{
 		server:  server,
@@ -64,6 +81,7 @@ func main() {
 		debug:   true,
 		infoLog: log.New(os.Stdout, "INFO\t", log.Ltime|log.Ldate|log.Lshortfile),
 		errLog:  log.New(os.Stderr, "ERROR\t", log.Ltime|log.Ldate|log.Llongfile),
+		Models:  models.New(upper),
 	}
 
 	//init jet template
@@ -101,4 +119,15 @@ func openDb(datasourceName string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func runMigrationScript(db db.Session) error {
+	script, err := os.ReadFile("./migrations/tables.sql")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.SQL().Exec(string(script))
+
+	return err
 }
