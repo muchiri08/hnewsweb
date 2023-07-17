@@ -1,8 +1,10 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"github.com/upper/db/v4"
+	"strings"
 	"time"
 )
 
@@ -38,4 +40,79 @@ type Post struct {
 
 type PostModel struct {
 	db db.Session
+}
+
+func (m PostModel) Table() string {
+	return "posts"
+}
+
+func (m PostModel) Get(id int) (*Post, error) {
+	var post *Post
+
+	q := strings.Replace(queryTemplate, "#where#", "WHERE p.id = $1", 1)
+	q = strings.Replace(q, "#orderby#", "", 1)
+	q = strings.Replace(q, "#limit#", "", 1)
+
+	row, err := m.db.SQL().Query(q)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := m.db.SQL().Iterator(row)
+	err = iter.One(post)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+func (m PostModel) GetAll(f Filters) ([]Post, Metadata, error) {
+	var posts []Post
+	var rows *sql.Rows
+	var err error
+	meta := Metadata{}
+
+	q := f.applyTemplate(queryTemplate)
+
+	if len(f.Query) > 0 {
+		rows, err = m.db.SQL().Query(q, "%"+strings.ToLower(f.Query)+"%", f.limit(), f.offset())
+	} else {
+		rows, err = m.db.SQL().Query(q, f.limit(), f.offset())
+	}
+
+	if err != nil {
+		return nil, meta, err
+	}
+
+	iter := m.db.SQL().Iterator(rows)
+	err = iter.All(posts)
+	if err != nil {
+		return nil, meta, err
+	}
+
+	if len(posts) == 0 {
+		return nil, meta, errors.New("no records found")
+	}
+
+	first := posts[0]
+
+	return posts, f.calculateMetadata(first.TotalRecords, f.Page, f.PageSize), nil
+}
+
+func (m PostModel) Vote(postId, userId int) error {
+
+	col := m.db.Collection("votes")
+
+	_, err := col.Insert(map[string]int{
+		"post_id": postId,
+		"user_id": userId,
+	})
+	if err != nil {
+		if errHasDuplicate(err, "votes_pkey") {
+			return ErrDuplicateVotes
+		}
+		return err
+	}
+	return nil
 }

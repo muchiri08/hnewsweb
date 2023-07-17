@@ -34,7 +34,7 @@ func convertUpperIdToInt(id db.ID) int {
 	return id.(int)
 }
 
-func errHashDuplicate(err error, key string) bool {
+func errHasDuplicate(err error, key string) bool {
 	str := fmt.Sprintf(`ERROR: duplicate key value violates unique constraint "%s"`, key)
 	return strings.Contains(err.Error(), str)
 }

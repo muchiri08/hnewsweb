@@ -66,7 +66,7 @@ func (m UsersModel) Insert(user *User) error {
 	result, err := collection.Insert(user)
 	if err != nil {
 		switch {
-		case errHashDuplicate(err, "users_email_key"):
+		case errHasDuplicate(err, "users_email_key"):
 			return ErrDuplicateEmail
 		default:
 			return err
