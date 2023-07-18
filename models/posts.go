@@ -3,7 +3,9 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"github.com/golang-module/carbon/v2"
 	"github.com/upper/db/v4"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -115,4 +117,16 @@ func (m PostModel) Vote(postId, userId int) error {
 		return err
 	}
 	return nil
+}
+
+func (p *Post) DateHuman() string {
+	return carbon.Time2Carbon(p.CreatedAt).DiffForHumans()
+}
+
+func (p *Post) Host() string {
+	ur, err := url.Parse(p.Url)
+	if err != nil {
+		return ""
+	}
+	return ur.Host
 }
