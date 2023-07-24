@@ -87,14 +87,14 @@ func (m PostModel) GetAll(f Filters) ([]Post, Metadata, error) {
 		return nil, meta, err
 	}
 
-	iter := m.db.SQL().Iterator(rows)
-	err = iter.All(posts)
+	iter := m.db.SQL().NewIterator(rows)
+	err = iter.All(&posts)
 	if err != nil {
 		return nil, meta, err
 	}
 
 	if len(posts) == 0 {
-		return nil, meta, errors.New("no records found")
+		return nil, meta, nil
 	}
 
 	first := posts[0]

@@ -54,10 +54,10 @@ func (f *Filters) addWhere(q string) string {
 
 func (f *Filters) addLimitOffset(q string) string {
 	if len(f.Query) > 0 {
-		return strings.Replace(q, "#where#", "LIMIT $2 OFFSET $3", 1)
+		return strings.Replace(q, "#limit#", "LIMIT $2 OFFSET $3", 1)
 	}
 
-	return strings.Replace(q, "#where#", "LIMIT $1 OFFSET $2", 1)
+	return strings.Replace(q, "#limit#", "LIMIT $1 OFFSET $2", 1)
 }
 
 func (f *Filters) applyTemplate(q string) string {
